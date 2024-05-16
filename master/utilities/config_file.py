@@ -1,25 +1,17 @@
 # Databricks notebook source
-config_delta_path = "/FileStore/tables/config_testing_delta"
-
-# COMMAND ----------
-
-config_details = spark.read.format("delta").load(config_delta_path)
-display(config_details)
-
-# COMMAND ----------
-
 from pyspark.sql import SparkSession
 from pyspark.sql.types import StructType, StructField, StringType, ArrayType
 from pyspark.sql import SparkSession, functions as F
 from pyspark.sql.functions import split,col
 from datetime import datetime
+# from configuration_details import *
 
 class Config:
    def __init__(self,source_table_name):
         self.source_table_name = source_table_name
     
    def get_config_details(self):
-       config_details_df = spark.read.format("delta").load(config_delta_path)
+       config_details_df = spark.read.csv(config_delta_path, header = True)
        config_details_required = config_details_df.filter(config_details_df["source_table_name"] == self.source_table_name).collect()
        return config_details_required
    

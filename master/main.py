@@ -1,20 +1,9 @@
 # Databricks notebook source
-# MAGIC %md #### Read the file stored in a storage account
-# MAGIC * Requires storage_account_name and storage_account_access_key
-# MAGIC * create a csv file path using the above parameters
-# MAGIC * create a spark dataframe
-
-# COMMAND ----------
-
-# MAGIC %run "/Workspace/dq_validation_tests/utilities/config_file"
-
-# COMMAND ----------
-
-# MAGIC %run "/Workspace/dq_validation_tests/utilities/test_functions"
-
-# COMMAND ----------
+from utilities.config import Config
+from utilities.test_function_pyspark import *
 
 import pyspark.sql.functions as fun
+
 def main():
     ## creating input file
     config_input = Config('100 CSV records')

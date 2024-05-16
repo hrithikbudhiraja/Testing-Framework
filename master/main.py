@@ -1,25 +1,36 @@
 # Databricks notebook source
+# install great_expectations
+pip install great_expectations
+
 from utilities.config import Config
-from utilities.test_function_pyspark import *
+from utilities.test_functions_pyspark import *
+from utilities.test_functions_great_expectations import *
 
 import pyspark.sql.functions as fun
 
 def main():
+    # getting configuration details
+    config_details = Config('100 CSV records')
+    config_details_required = config_details.get_config_details()
+
     # creating input file
-    config_input = Config('100 CSV records')
-    df_input = config_input.create_dataframe()
-    pk_field_input = config_input.get_pk_field()
+    source_df = config_details.create_source_dataframe(config_details_required)
 
     # creating output file
-    config_output = Config('output_copy')
-    df_output = config_output.create_dataframe()
-    pk_field_output = config_output.get_pk_field()
-    df_output_new = df = df_output.drop('Order Priority') ## Used to get mismatches in comparision test
+    target_df = config_details.create_target_dataframe(config_details_required)
 
-    # tests are called
+    # pyspark tests
     count_validation(source_df, target_df)
-    null_validation(df_output)
-    check_duplicates(df_output)
+    null_validation(target_df)
+    check_duplicates(target_df)
+
+    # great_expectations dataframes
+    ge_df = ge.dataset.SparkDFDataset(source_df)
+    ge_df = ge.dataset.SparkDFDataset(target_df)
+
+    # great expectation tests
+    
+
 main()
 
 # COMMAND ----------

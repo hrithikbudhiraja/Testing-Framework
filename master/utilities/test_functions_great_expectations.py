@@ -1,46 +1,14 @@
 # Databricks notebook source
-pip install great_expectations
-
-# COMMAND ----------
-
-import great_expectations as ge
-
-# COMMAND ----------
-
-# MAGIC %run "/Workspace/dq_validation_tests/utilities/config_file"
-
-# COMMAND ----------
-
-# MAGIC %md #### Read the data
-
-# COMMAND ----------
-
-config_input = Config('100 CSV records')
-df_input = config_input.create_dataframe()
-display(df_input)
-
-# COMMAND ----------
-
-## Get pk field
-pk_field = config_input.get_pk_field()
-print(pk_field)
-
-# COMMAND ----------
-
 # MAGIC %md #### Convert the spark dataframe to a great expectations dataframe
 
 # COMMAND ----------
 
-ge_df = ge.dataset.SparkDFDataset(df_input)
+def count_validation(source_df, target_df):
+    source_df_count = source_df.count
+    target_df.expect_table_row_count_to_be_equal(source_df_count)
 
-# COMMAND ----------
-
-# MAGIC %md #### Implementing primary key check
-
-# COMMAND ----------
-
-def primary_key_check(df):
-    pk_field = 'Order ID'
+def primary_key_check(df, pk_field):
+    pk_field = pk_field
     df.expect_column_values_to_be_unique(pk_field)
     df.expect_column_values_to_not_be_null(pk_field)
     df.get_expectation_suite()
@@ -48,7 +16,7 @@ def primary_key_check(df):
     test_results = df.validate(expectation_suite="order.data.expectations.json")
     return test_results
 
-primary_key_check(ge_df)
+
 
 # COMMAND ----------
 
@@ -89,7 +57,7 @@ def check_data_types(df, data_types):
 # COMMAND ----------
 
     data = {
-        'ID': [1, 2, 3, 4],               # Expected int
+        'ID': [1, 2, 3, 4],  # Expected int
         'Temperature': [20.5, 22.1, 21.6, 19.9],  # Expected float
         'Name': ['Alice', 'Bob', 'Charlie', 'Diana'], # Expected str
         'Active': [True, False, True, False] # Expected bool

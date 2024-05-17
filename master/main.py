@@ -1,10 +1,11 @@
 # Databricks notebook source
-# install great_expectations
-pip install great_expectations
+# MAGIC %run "/Workspace/Repos/hrithik@sagar1001.onmicrosoft.com/Testing-Framework/master/utilities/config_file"
 
-from utilities.config import Config
-from utilities.test_functions_pyspark import *
-from utilities.test_functions_great_expectations import *
+# COMMAND ----------
+
+# MAGIC %run "/Workspace/Repos/hrithik@sagar1001.onmicrosoft.com/Testing-Framework/master/utilities/test_functions_pyspark"
+
+# COMMAND ----------
 
 import pyspark.sql.functions as fun
 
@@ -19,20 +20,23 @@ def main():
     # creating output file
     target_df = config_details.create_target_dataframe(config_details_required)
 
+    display(target_df)
+
+    pk_field = config_details.get_pk_field(config_details_required)
+    print(pk_field)
+
     # pyspark tests
     count_validation(source_df, target_df)
-    null_validation(target_df)
-    check_duplicates(target_df)
-
-    # great_expectations dataframes
-    ge_df = ge.dataset.SparkDFDataset(source_df)
-    ge_df = ge.dataset.SparkDFDataset(target_df)
-
-    # great expectation tests
-    
+    null_validation(source_df, target_df)
+    duplicate_check(source_df, target_df)
 
 main()
 
 # COMMAND ----------
 
-
+config_details = Config('100 CSV records')
+config_details_required = config_details.get_config_details()
+source_df = config_details.create_source_dataframe(config_details_required)
+target_df = config_details.create_target_dataframe(config_details_required)
+pk_field = config_details.get_pk_field(config_details_required)
+pk_field

@@ -1,4 +1,8 @@
 # Databricks notebook source
+config_delta_path = '/FileStore/tables/config_testing.csv'
+
+# COMMAND ----------
+
 from pyspark.sql import SparkSession
 from pyspark.sql.types import StructType, StructField, StringType, ArrayType
 from pyspark.sql import SparkSession, functions as F

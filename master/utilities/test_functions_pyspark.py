@@ -1,39 +1,73 @@
 # Databricks notebook source
-from pyspark.sql import SparkSession
-from pyspark.sql.functions import col
-import pyspark.sql.functions as func
+def null_validation(source_df, target_df):
+    validation_results = []
+ 
+    # Iterate through columns and check for nulls in both source and target
+    for column in source_df.columns:
+        source_nulls = source_df.filter(source_df[column].isNull()).count()
+        target_nulls = target_df.filter(target_df[column].isNull()).count()
+    
+        validation_results.append((column, source_nulls, target_nulls))
+ 
+    # Convert validation results to a DataFrame
+    results_df = spark.createDataFrame(validation_results, ["Column", "Source_Nulls", "Target_Nulls"])
 
-# count validation
+    #Coalesce the DataFrame to a single partition
+    results_df = results_df.coalesce(1)
+
+    output_path = "abfss://output@stg1010.dfs.core.windows.net/null_validation/results.csv"
+ 
+    # Write the results DataFrame to the specified path in CSV format
+    results_df.write.csv(output_path, header=True, mode='overwrite')
+    return results_df
+
+
+# COMMAND ----------
+
 def count_validation(source_df, target_df):
+
+    #Get the count of rows in source and target files
     source_count = source_df.count() # source count
     target_count = target_df.count() # target count
 
-    if source_count == target_count:
-        print(f'source_count is: {source_count} and target_count is: {target_count} and the counts are matching')
-    else:
-        print(f'source_count is: {source_count} and target_count is: {target_count} and the counts are not matching')
+    #Create a DataFrame with the results 
+    validation_results =[(source_count, target_count)]
+    results_df = spark.createDataFrame(validation_results, [ "Source_Count", "Target_Count"])
 
-# null validation
-def null_validation(dataframe, columns):
-    null_counts = {}
-    for column in columns:
-        nulls = dataframe.filter(col(column).isNull()).count()
-        if nulls > 0:
-            null_counts[column] = nulls
-    
-    if not null_counts:
-        print("Null value check result - No null values found in any column.")
-    else:
-        for column, count in null_counts.items():
-            print(f"Column '{column}' has {count} null values.")
+    #Coalesce the DataFrame to a single partition
+    results_df = results_df.coalesce(1)
 
-## duplicate check
-def duplicate_check(df, column):
-    
-    dupes = df.groupBy(column).agg(F.count("*").alias("duplicate_count"))
-    dupes_with_count = dupes.filter(F.col("duplicate_count") > 1)
-    if dupes_with_count.count() > 0:
-        print(f"Duplicate check result - WARNING: Found potential duplicates in table:")
-        dupes_with_count.show(truncate=False)
-    else:
-        print(f"Duplicate check result - NO duplicate records found in table.")
+    output_path = "abfss://output@stg1010.dfs.core.windows.net/count_validation/results.csv"
+ 
+    # Write the results DataFrame to the specified path in CSV format
+    results_df.write.csv(output_path, header=True, mode='overwrite')
+    return results_df
+
+# COMMAND ----------
+
+from pyspark.sql.functions import col, count, lit
+def duplicate_check(source_df, target_df):
+    # Identify duplicates in source and target DataFrames
+    source_duplicates = source_df.groupBy(source_df.columns).count().filter(col("count") > 1)
+    target_duplicates = target_df.groupBy(target_df.columns).count().filter(col("count") > 1)
+ 
+    # Add a column to indicate source/target for clarity
+    source_duplicates = source_duplicates.withColumn("SourceOrTarget", lit("Source"))
+    target_duplicates = target_duplicates.withColumn("SourceOrTarget", lit("Target"))
+ 
+    # Union the two DataFrames to get a combined result
+    validation_results = source_duplicates.union(target_duplicates)
+ 
+    # Select only the necessary columns for output
+    results_df = validation_results.select(*source_df.columns, "SourceOrTarget")
+
+    #Coalesce the DataFrame to a single partition
+    results_df = results_df.coalesce(1)
+
+    output_path = "abfss://output@stg1010.dfs.core.windows.net/duplicate_validation/results.csv"
+ 
+    # Write the results DataFrame to the specified path in CSV format
+    results_df.write.csv(output_path, header=True, mode='overwrite')
+    return results_df
+
+

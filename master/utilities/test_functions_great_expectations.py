@@ -3,27 +3,29 @@
 
 # COMMAND ----------
 
+import great_expectations as ge
+from great_expectations.checkpoint import Checkpoint
+
+# COMMAND ----------
+
 # getting configuration details
-config_details = Config('100 CSV records')
+config_details = Config('orders_input')
 config_details_required = config_details.get_config_details()
 
 # creating input file
-source_df = config_details.create_source_dataframe(config_details_required)
+source_spark_df = config_details.create_source_dataframe(config_details_required)
+source_df = source_spark_df.toPandas()
 
 # creating output file
-target_df = config_details.create_target_dataframe(config_details_required)
+target_spark_df = config_details.create_target_dataframe(config_details_required)
+target_df = target_spark_df.toPandas()
 
 pk_field = config_details.get_pk_field(config_details_required)
 
 # Creating great expectations dataframe
-source_ge_df = ge.dataset.SparkDFDataset(source_df)
-target_ge_df = ge.dataset.SparkDFDataset(target_df)
+source_ge_df = ge.from_pandas(source_df)
+target_ge_df = ge.from_pandas(target_df)
 
-
-# COMMAND ----------
-
-import great_expectations as ge
-from great_expectations.checkpoint import Checkpoint
 
 # COMMAND ----------
 
@@ -35,20 +37,15 @@ context = ge.get_context(context_root_dir=context_root_dir)
 
 # COMMAND ----------
 
-dataframe_datasource = context.sources.add_or_update_spark(
-    name="testing_data_asset",
-)
+datasource = context.sources.add_pandas(name="testing_data_asset_pandas")
 
 # COMMAND ----------
 
-dataframe_asset = dataframe_datasource.add_dataframe_asset(
-    name="data",
-    dataframe = source_df,
-)
+data_asset = datasource.add_dataframe_asset(name= "data")
 
 # COMMAND ----------
 
-batch_request = dataframe_asset.build_batch_request()
+batch_request = data_asset.build_batch_request(dataframe = source_df)
 
 # COMMAND ----------
 
@@ -75,7 +72,7 @@ validator.expect_column_values_to_not_be_null(column="Order ID")
 # COMMAND ----------
 
 # validate count between source and target tables
-source_count = source_df.count()
+source_count = source_df.shape[0]
 validator.expect_table_row_count_to_equal(source_count)
 
 # COMMAND ----------
@@ -85,7 +82,7 @@ validator.expect_column_values_to_be_unique("Country")
 
 # COMMAND ----------
 
-validator.expect_column_values_to_be_of_type("Country", str)
+validator.expect_column_values_to_be_of_type("Country", "str")
 
 # COMMAND ----------
 
@@ -118,7 +115,3 @@ context.add_or_update_checkpoint(checkpoint=checkpoint)
 
 checkpoint_result = checkpoint.run()
 checkpoint_result
-
-# COMMAND ----------
-
-print(checkpoint.get_config().to_yaml_str())

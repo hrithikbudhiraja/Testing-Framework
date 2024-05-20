@@ -11,7 +11,7 @@ import pyspark.sql.functions as fun
 
 def main():
     # getting configuration details
-    config_details = Config('100 CSV records')
+    config_details = Config('orders_input')
     config_details_required = config_details.get_config_details()
 
     # creating input file
@@ -31,12 +31,3 @@ def main():
     duplicate_check(source_df, target_df)
 
 main()
-
-# COMMAND ----------
-
-#config_details = Config('100 CSV records')
-#config_details_required = config_details.get_config_details()
-#source_df = config_details.create_source_dataframe(config_details_required)
-#target_df = config_details.create_target_dataframe(config_details_required)
-#pk_field = config_details.get_pk_field(config_details_required)
-#pk_field
